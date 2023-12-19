@@ -1,64 +1,77 @@
-#include<winsock2.h>
-#include<stdio.h>
-#include<string.h>
-#include <io.h>
+#include <stdio.h>
+#include <winsock2.h>
 
-#define MAXBUF 1024
+#define PORT_NUM 3800
 
-int main(int argc, char** argv) {
+struct cal_data{
+    int left_num;
+    int right_num;
+    char op;
+    int result;
+    short int error;
+};
 
-	int server_sockfd, client_sockfd;
-	int client_len ,n;
-	char buf[MAXBUF];
-	struct sockaddr_in clientaddr ,serveraddr;	//bind
+int main(int argc, char** argv){
+    SOCKET sockfd;
+    int addrlen;
+    int cal_result =0;
+    int left_num, right_num;
+    struct sockaddr_in addr, cliaddr;
+    struct cal_data rdata;
 
-	client_len = sizeof(clientaddr);
+    WSADATA wsaData;
 
-	//	1.made new UDP socket (socket)
-	if ((server_sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
-		perror("UDP Sock made failed. pls check addr or ip setting.");
-		exit(0);
-	}
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR)
+        return 1;
 
-	////bind=========================================
-	//this part made ip addr and port, protocol.
-	memset(&serveraddr ,0x00 ,sizeof(serveraddr));
-	//host byte order
-	serveraddr.sin_family = AF_INET;					
-	//network byte order
-	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);		//0,0,0,0	 host to network long		record byte first
-	serveraddr.sin_port = htons(atoi(argv[1]));			//record byte first. sin_addr and sin_port need to capsul
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+        return 1;
 
-	//	2. bind set socket
-	bind(server_sockfd, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
+    memset((void*)&addr, 0x00, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_port = htons(PORT_NUM);
 
-	//===============================================
+    addrlen = sizeof(addr);
+    if (bind(sockfd, (struct sockaddr*)&addr, addrlen) == -1)
+        return 1;
 
-	//	3.listen calling the client
-	listen(server_sockfd, 5);
+    while (1){
 
-	//do whileing process client thing
-	//	4.5.6. accept and read & write
-	while (1) {
-		memset(buf, 0x00, MAXBUF);
-		client_sockfd = accept(server_sockfd, (struct sockaddr*)&clientaddr, &client_len);
+        addrlen = sizeof(cliaddr);
+        recvfrom(sockfd, (char*)&rdata, sizeof(rdata), 0, (struct sockaddr*)&cliaddr, &addrlen);
+#if DEBUG
+        printf(lient "Info : %s (%d)\n", inet_ntoa(cliaddr.sin_addr), ntohs(cliaddr.sin_port));
+        printf("%d %c %d\n", ntohl(rdata.left_num), rdata.op, ntohl(rdata.right_num));
+#endif
 
-		printf("newer client connect : %s\n" , inet_ntoa(clientaddr.sin_addr));
-
-		if ((n = _read(client_sockfd, buf, MAXBUF) <= 0)) {
-			_close(client_sockfd);
-			continue;
-		}
-		if (_write(client_sockfd, buf, MAXBUF) <= 0) {
-			perror("Write error : ");
-			_close(client_sockfd);
-		}
-		_close(client_sockfd);
-	}
-
-	//	7.close
-	_close(server_sockfd);
-	return 0;
-
+        left_num = ntohl(rdata.left_num);
+        right_num = ntohl(rdata.right_num);
+        switch (rdata.op)
+        {
+        case '+':
+            cal_result = left_num + right_num;
+            break;
+        case '0':
+            cal_result = left_num - right_num;
+            break;
+        case '*':
+            cal_result = left_num * right_num;
+            break;
+        case '/':
+            if (right_num == 0)
+            {
+                rdata.error = htons(2);
+                break;
+            }
+            cal_result = left_num / right_num;
+            break;
+        }
+        rdata.result = htonl(cal_result);
+        sendto(sockfd, (char*)&rdata, sizeof(rdata), 0,
+            (struct sockaddr*)&cliaddr, addrlen);
+    }
+    closesocket(sockfd);
+    WSACleanup();
+    return 0;
 }
-
