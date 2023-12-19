@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <winsock2.h>
 
+//에러 신경 x 표기용 작성 코드임
+
 int main(int argc, char** argv[]) {
 
 	int sockfd = 0;
@@ -81,7 +83,7 @@ int main(int argc, char** argv[]) {
 
 	serveraddr.sin_family = AF_INET;
 	serveraddr.sin_addr.s_addr = inet_addr("127.0.0.1");		// <<inet_addr 127주소를 2진 주소로 변환
-	serveraddr.sin_port = htons(3000);
+	serveraddr.sin_port = htons(3000);							//inet_ntoa --> 이건 다시 2진 주소를 3점 주소로 변환
 
 	int client_len = sizeof(serveraddr);
 
