@@ -19,7 +19,7 @@ int main(int argc, char** argv[]) {
 	//sockfd			: 앞에 생성되어진 endpoint 소켓
 	//my_addr			: ip 및 port 번호 저장용 변수가 있는 struct
 	//addrlen			: 두번째 인자 전달 크기
-	//return value		: 성공0 실패 -1 리턴
+	//리턴값				: 성공0 실패 -1 리턴
 	struct sockaddr_in clientaddr, serveraddr, myaddr;
 
 	memset(&serveraddr, 0x00, sizeof(serveraddr));				//두번째 인자 구조체를 이용해서 주소와 포트번호를 저장함
@@ -93,12 +93,39 @@ int main(int argc, char** argv[]) {
 
 
 	//6. Read / Write 데이터 읽기 쓰기
-	SSIZE_T read(int fd, void* buf, size_t coint);
+	SSIZE_T read(int fd, void* buf, size_t count);
 	//fd			: 열린 파일의 지정번호 -소켓 지정번호
 	//buf			: 읽어드인 데이터가 저장될 버퍼변수
 	//count			: 읽어들일 데이터의 count 크기
-	//리턴값			: 성공하면 읽은 데이터의 byte-단위 를 출력 실패시 -1
+	//리턴값			: 성공하면 읽은 데이터의 byte-단위를 출력 실패시 -1
 
+	int readn;
+	char buf[80];
+	memset(buf ,0x00 ,80);
+	readn = read(sockfd, buf, 80);
+	//sockfd소켓 n번에서 에서 가져온 파일을 buf[80]에 저장하고 카운트 크기를 저장
+
+
+	size_t write(int fd, const void* buf, size_t count);
+	//fd			: 연결된 소켓 지정 번호
+	//buf			: 보낼 데이터가 저장되어 있는 버퍼
+	//count			: 보낼 데이터의 크기
+	//리턴값			: 성공시 데이터의 크기를, 실패시 -1 출력
+
+	int fd = 100;
+	struct user_info {
+		int age;
+		char name[30];
+	};
+	//...
+	struct user_info mydata;
+	mydata.age = htonl(25);
+	strncpy(mydata.name, "RealName\0" , sizeof(mydata.name));		//되도록이면 strcpy는 쓰지말것 오버플로우 공격시 취약함
+	int writen = write(fd, (void*)&mydata, sizeof(mydata));			//만약 strcpy를 꼭 써야한다면 파일 끝에 엔드포인트 \0 << 명시 필요
+
+
+	//7. close소켓 종료
+	int close(int sockfd);
 
 	return 0;
 }
