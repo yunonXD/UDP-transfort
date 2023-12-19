@@ -1,14 +1,14 @@
-#include <winsock2.h>
-#include<iostream>
+#include<winsock2.h>
+#include<stdio.h>
 #include<string.h>
+#include <io.h>
 
 #define MAXBUF 1024
-using namespace std;
 
-int main(int arvc, char** argv) {
+int main(int argc, char** argv) {
 
-	int server_sockfd=0, client_slockfd=0;
-	int client_len =0 ,n=0;
+	int server_sockfd, client_sockfd;
+	int client_len ,n;
 	char buf[MAXBUF];
 	struct sockaddr_in clientaddr ,serveraddr;	//bind
 
@@ -22,7 +22,7 @@ int main(int arvc, char** argv) {
 
 	////bind=========================================
 	//this part made ip addr and port, protocol.
-	memset(&serveraddr,0 ,sizeof(serveraddr));
+	memset(&serveraddr ,0x00 ,sizeof(serveraddr));
 	//host byte order
 	serveraddr.sin_family = AF_INET;					
 	//network byte order
@@ -36,6 +36,29 @@ int main(int arvc, char** argv) {
 
 	//	3.listen calling the client
 	listen(server_sockfd, 5);
+
+	//do whileing process client thing
+	//	4.5.6. accept and read & write
+	while (1) {
+		memset(buf, 0x00, MAXBUF);
+		client_sockfd = accept(server_sockfd, (struct sockaddr*)&clientaddr, &client_len);
+
+		printf("newer client connect : %s\n" , inet_ntoa(clientaddr.sin_addr));
+
+		if ((n = _read(client_sockfd, buf, MAXBUF) <= 0)) {
+			_close(client_sockfd);
+			continue;
+		}
+		if (_write(client_sockfd, buf, MAXBUF) <= 0) {
+			perror("Write error : ");
+			_close(client_sockfd);
+		}
+		_close(client_sockfd);
+	}
+
+	//	7.close
+	_close(server_sockfd);
+	return 0;
 
 }
 
